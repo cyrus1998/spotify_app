@@ -24,6 +24,8 @@ const NavBar = (props:any) => {
         alt="spotify white logo"   
         width={200}
         height={60}     
+        priority={true}
+        quality={50}
         />
         <Button variant="ghost" size="icon" className="bg-black hover:bg-white-200 mr-12" onClick={()=>{setTheme('dark')}}>
         <Sun color="white"/>
