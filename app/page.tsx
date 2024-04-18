@@ -4,7 +4,8 @@ import { METHODS } from "http";
 import { createHash } from 'crypto' 
 import querystring from 'querystring';
 import { redirect } from "next/dist/server/api-utils";
-
+import { useEffect } from "react";
+import { isUndefined } from "util";
 
 export default function Home() {
 
@@ -29,6 +30,28 @@ export default function Home() {
       .replace(/\//g, '_');
   }
   
+  const getToken = async code => {
+    // stored in the previous step
+    let codeVerifier = localStorage.getItem('code_verifier');
+    const payload = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: process.env.NEXT_PUBLIC_CLIENT_ID,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: process.env.NEXT_PUBLIC_REDIRECT_URI,
+        code_verifier: codeVerifier,
+      }),
+    }
+    let url = "https://accounts.spotify.com" + "/api/token"
+    const body = await fetch(url, payload);
+    const response =await body.json();
+  
+    localStorage.setItem('access_token', response.access_token);
+  }
 
   const loginHandler = async () => {
     try {
@@ -36,12 +59,13 @@ export default function Home() {
         const hashed = await sha256(codeVerifier);
         const codeChallenge = base64encode(Buffer.from(hashed, 'hex'));
         const scope = 'user-read-private user-read-email';
+        window.localStorage.setItem('code_verifier', codeVerifier);
         const redirectUri = 'https://accounts.spotify.com/authorize?' +
         querystring.stringify({
           response_type: 'code',
           client_id: process.env.NEXT_PUBLIC_CLIENT_ID,
           scope: scope,
-          redirect_uri: process.env.NEXT_PUBLIC_REDIRECT_URI,
+          redirect_uri: process.env.NEXT_PUBLIC_HOST,
           code_challenge_method: "S256",
           code_challenge: codeChallenge
         })
@@ -50,6 +74,17 @@ export default function Home() {
 			console.log(err);
 		}
   }
+
+  useEffect(()=>{
+    const urlParams = new URLSearchParams(window.location.search);
+    let code = urlParams.get('code');
+    let accessToken = localStorage.getItem('access_token');
+    console.log("the token",accessToken,typeof(accessToken))
+    if(accessToken === "undefined"){
+        console.log("function should trigger")
+        getToken(code)
+    }
+},[])
 
   return (
     <main>
