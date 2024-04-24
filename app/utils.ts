@@ -1,8 +1,9 @@
 export const apiCall = async (uri) => {
     let token = localStorage.getItem('access_token')
     const refresh_token = localStorage.getItem('refresh_token')
-    const expiry = localStorage.getItem('expiry')
-    if (Date.now() > expiry) {
+    const expire = localStorage.getItem('expire')
+    console.log("time checking", expire, Date.now(), Date.now()>new Date(expire))
+    if (Date.now() > new Date(expire)) {
         const refreshUrl = "https://accounts.spotify.com/api/token";
         const refreshPayload = {
             method: 'POST',
@@ -27,7 +28,8 @@ export const apiCall = async (uri) => {
             'Authorization': 'Bearer ' + token
         },
     }
-    const body = await fetch (uri, payload)
-    return body.json()
+    const response = await fetch (uri, payload)
+    const body = await response.json();
+    return body
     
 }
