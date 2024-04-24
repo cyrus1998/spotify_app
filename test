@@ -1,0 +1,33 @@
+{
+    "display_name": "Cyrus Ng",
+    "external_urls": {
+        "spotify": "https://open.spotify.com/user/224cbiosgwiqkcje4tl35me2i"
+    },
+    "href": "https://api.spotify.com/v1/users/224cbiosgwiqkcje4tl35me2i",
+    "id": "224cbiosgwiqkcje4tl35me2i",
+    "images": [
+        {
+            "url": "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=723594934413714&height=50&width=50&ext=1716551976&hash=AbZ3OaumBZKi1QLzP3XkUMoo",
+            "height": 64,
+            "width": 64
+        },
+        {
+            "url": "https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=723594934413714&height=300&width=300&ext=1716551976&hash=Abb2-KscFyy2VPeCMO7JMgww",
+            "height": 300,
+            "width": 300
+        }
+    ],
+    "type": "user",
+    "uri": "spotify:user:224cbiosgwiqkcje4tl35me2i",
+    "followers": {
+        "href": null,
+        "total": 13
+    },
+    "country": "HK",
+    "product": "premium",
+    "explicit_content": {
+        "filter_enabled": false,
+        "filter_locked": false
+    },
+    "email": "cyrusng24@gmail.com"
+}
