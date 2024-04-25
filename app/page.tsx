@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { createHash } from "crypto";
 import querystring from "querystring";
 import { useEffect, useState } from "react";
-import { apiCall } from "./utils";
+import { apiCall,getField } from "./utils";
 import { useTheme } from "next-themes";
 import Image from "next/image";
+import { object } from "zod";
 
 export default function Home() {
   interface imageBody {
@@ -23,8 +24,11 @@ export default function Home() {
     uri?: string;
   }
 
+
   const [isLogin, setIsLogin] = useState(false);
   const [userData, setUserData] = useState<Userdataresponse>({});
+  const [playLists, setPlayLists] = useState(0);
+  const [following, setFollowing] = useState(0);
   const { theme, setTheme } = useTheme();
   const generateRandomString = (length: number): string => {
     const possible =
@@ -93,7 +97,7 @@ export default function Home() {
       const codeVerifier: string = generateRandomString(64);
       const hashed = await sha256(codeVerifier);
       const codeChallenge = base64encode(Buffer.from(hashed, "hex"));
-      const scope = "user-read-private user-read-email";
+      const scope = "user-read-private user-read-email user-follow-read";
       window.localStorage.setItem("code_verifier", codeVerifier);
       const redirectUri =
         "https://accounts.spotify.com/authorize?" +
@@ -133,14 +137,17 @@ export default function Home() {
     }
   }, []);
 
-  async function fetchData() {
+  async function fetchData(endPoint:string,update: (result: any) => void, field:string) {
     try {
       const result = await apiCall(
-        process.env.NEXT_PUBLIC_SPOTIFY_API_HOST + "v1/me"
+        process.env.NEXT_PUBLIC_SPOTIFY_API_HOST + endPoint
       );
       // Handle the resolved data here
-      console.log(result);
-      setUserData(result);
+      if (field !== ""){
+        update(result[field])
+      }else{
+        update(result);
+      }
     } catch (error) {
       // Handle any errors that occurred during the API call
       console.log(error);
@@ -149,10 +156,17 @@ export default function Home() {
   
   useEffect(() => {
     if (isLogin) {
-      fetchData();
+      fetchData("v1/me",setUserData,""); //main profile data
     }
   }, [isLogin]);
   
+  useEffect(()=>{
+    if(Object.keys(userData).length>0){
+      fetchData("v1/users/"+ userData.id +"/playlists",setPlayLists,"total"); //playlist data
+      fetchData("v1/me/following?type=artist",setFollowing,"total"); //playlist data need fix
+    }
+  }, [userData])
+
 
   return (
     <main>
@@ -165,33 +179,49 @@ export default function Home() {
             </Button>
           </div>
         )}
-        {isLogin && !!userData && (
+        {isLogin && Object.keys(userData).length>0 && (
           <div className="flex flex-grow flex-col min-h-screen min-w-screen items-center justify-center">
             <div
               className={
-                "flex h-[40vh] w-4/5 " +
+                "flex flex-col h-[30vh] w-4/5 " +
                 (theme === "dark" ? "border-white" : "border-black") +
-                " border-b-4" + 
-                "flex-col justify-center"
+                " border-b-4"+ 
+                " items-center"
               }
             >
-              <div style={{borderRadius: '50%',height:"64px",width:"64px" ,overflow: 'hidden'}}>
+              <div className="flex flex-row items-center justify-between w-[22.5vh]">
+              <div className="rounded-full h-16 w-16 overflow-hidden">
               <Image
-              src="https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=723594934413714&height=50&width=50&ext=1716551976&hash=AbZ3OaumBZKi1QLzP3XkUMoo"
+              src={userData.images[1].url}
               alt="User Icon"   
-              width={64}height={64}
+              width={64}
+              height={64}
               objectFit="cover"
               priority={true}
               />
               </div>
-             
-              <h1 className="mt-24">hi</h1>
+              <strong>{userData.display_name}</strong>
+              </div>
+              <div className="flex flex-row justify-between w-3/5 mt-8">
+              <div className="flex flex-col items-center">
+              <strong>Following</strong>
+              <strong className="text-2xl mt-4">{following}</strong>
+              </div>
+              <div className="flex flex-col items-center">
+              <strong>Followers</strong>
+              <strong className="text-2xl mt-4">{userData.followers.total}</strong>
+              </div>
+              <div className="flex flex-col items-center">
+              <strong>Playlist</strong>
+              <strong className="text-2xl mt-4">{playLists}</strong>
+              </div>
+              </div>
+
             </div>
             <div
               className={
-                "h-[60vh] w-4/5"}
+                "h-[50vh] w-4/5"}
             >
-              <h1>hi</h1>
             </div>
             {/* <div className={"min-h-2/3 w-4/5 "}>
             <h1>hii</h1>
@@ -202,3 +232,4 @@ export default function Home() {
     </main>
   );
 }
+
