@@ -20,7 +20,7 @@ const NavBar = (props:any) => {
         theme=="light" ?
         <div className="w-screen bg-black flex flex-row justify-between items-center">
         <Image
-        src="/img/Spotify_Logo_CMYK_White.png"
+        src="/img/Spotify_Logo_CMYK_Green.png"
         alt="spotify white logo"   
         width={200}
         height={60}     
@@ -31,15 +31,15 @@ const NavBar = (props:any) => {
         <Sun color="white"/>
         </Button>
     </div> : 
-        <div className="w-screen bg-white flex flex-row justify-between items-center">
+        <div className="w-screen bg-black flex flex-row justify-between items-center">
         <Image
-        src="/img/Spotify_Logo_CMYK_Black.png"
-        alt="spotify white logo"   
+        src="/img/Spotify_Logo_CMYK_Green.png"
+        alt="spotify Green logo"   
         width={200}
         height={60}     
         />
-        <Button variant="ghost" size="icon" className="bg-white hover:bg-black-200 mr-12" onClick={()=>{setTheme('light')}}>
-        <Moon color="black"/>
+        <Button variant="ghost" size="icon" className="bg-black hover:bg-black-200 mr-12" onClick={()=>{setTheme('light')}}>
+        <Moon color="white"/>
         </Button>
     </div>
         
