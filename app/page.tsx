@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { createHash } from "crypto";
 import querystring from "querystring";
 import { useEffect, useState } from "react";
-import { apiCall,getField } from "./utils";
+import { apiCall,refreshCall } from "./utils";
 import { useTheme } from "next-themes";
 import Image from "next/image";
 import { object } from "zod";
@@ -134,11 +134,12 @@ export default function Home() {
     if (!isLogin && code) {
       if (accessToken == null || accessToken == "undefined") {
         console.log("function should trigger");
-        getToken(code);
-        setIsLogin(true);
-      } else {
-        setIsLogin(true);
+        getToken(code); //first login
       }
+      setIsLogin(true); //refresh on page
+    }else if(!isLogin && refresh_token){
+      refreshCall();
+      setIsLogin(true)
     }
   }, []);
 
@@ -257,10 +258,10 @@ export default function Home() {
 
             </div>
             <div className={"flex h-[50vh] w-full justify-center items-center"}>
-              <div className={"flex-col flex-1 h-full w-1/2 items-center justify-center"}>
+              <div className={"flex flex-col flex-1 h-full w-1/2 items-center justify-center"}>
                 <strong>Top Artists of All Time</strong>
               <div className="flex flex-row w-full mt-8 items-center">
-              <div className="rounded-full h-16 w-16 overflow-hidden mr-8">
+              <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-16">
                   <Image
                   src={topArtists.items[0].images[1].url}
                   alt="Top Arist Icon 1"   
@@ -273,7 +274,7 @@ export default function Home() {
               <p>{topArtists.items[0].name}</p>
                 </div>
                 <div className="flex flex-row w-full mt-8 items-center">
-              <div className="rounded-full h-16 w-16 overflow-hidden mr-8">
+              <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-16">
                   <Image
                   src={topArtists.items[1].images[1].url}
                   alt="Top Arist Icon 2"   
@@ -286,7 +287,7 @@ export default function Home() {
               <p>{topArtists.items[1].name}</p>
                 </div>
                 <div className="flex flex-row w-full mt-8 items-center">
-              <div className="rounded-full h-16 w-16 overflow-hidden mr-8">
+              <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-16">
                   <Image
                   src={topArtists.items[2].images[1].url}
                   alt="Top Arist Icon 3"   
@@ -299,10 +300,10 @@ export default function Home() {
               <p>{topArtists.items[2].name}</p>
                 </div>
               </div>
-              <div className={"flex-col flex-1 h-full w-1/2 justify-center"}>
+              <div className={"flex flex-col flex-1 h-full w-1/2 justify-center"}>
                 <strong>Top Tracks of All Time</strong>
                 <div className="flex flex-row w-full mt-8 items-center">
-              <div className="rounded-full h-16 w-16 overflow-hidden mr-8">
+              <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-16">
                   <Image
                   src={topTracks.items[0].album.images[1].url}
                   alt="Top track Icon 1"   
@@ -315,7 +316,7 @@ export default function Home() {
               <p>{topTracks.items[0].name}</p>
                 </div>
                 <div className="flex flex-row w-full mt-8 items-center">
-              <div className="rounded-full h-16 w-16 overflow-hidden mr-8">
+              <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-16">
                   <Image
                   src={topTracks.items[1].album.images[1].url}
                   alt="Top track Icon 2"   
@@ -328,7 +329,7 @@ export default function Home() {
               <p>{topTracks.items[1].name}</p>
                 </div>
                 <div className="flex flex-row w-full mt-8 items-center">
-              <div className="rounded-full h-16 w-16 overflow-hidden mr-8">
+              <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-16">
                   <Image
                   src={topTracks.items[2].album.images[1].url}
                   alt="Top track Icon 3"   
