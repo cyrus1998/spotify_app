@@ -28,7 +28,7 @@ const config = {
         ring: "hsl(var(--ring))",
         green: "hsl(var(--green))",
         grey: "hsl(59 0% 61%)",
-        bgGrey: "hsl(0 9% 14%)",
+        bgGrey: "hsl(0 0% 9%)",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {

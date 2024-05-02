@@ -6,10 +6,10 @@ import { useEffect, useState } from "react";
 import { apiCall,refreshCall } from "./utils";
 import { useTheme } from "next-themes";
 import Image from "next/image";
-import { object } from "zod";
 import { Newspaper } from 'lucide-react';
 import { MicVocal } from 'lucide-react';
 import { Headphones } from 'lucide-react';
+import { Router, useRouter } from 'next/navigation'
 
 export default function Home() {
   interface imageBody {
@@ -35,6 +35,7 @@ export default function Home() {
   const { theme, setTheme } = useTheme();
   const [topArtists, setTopArtists] = useState<any>({});
   const [topTracks, setTopTracks] = useState<any>({});
+  const router = useRouter()
   const generateRandomString = (length: number): string => {
     const possible =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -175,8 +176,8 @@ export default function Home() {
   useEffect(() => {
     if (isLogin) {
       fetchData("v1/me",setUserData,""); //main profile data
-      fetchData("v1/me/top/artists?time_range=long_term&limit=3",setTopArtists,""); //main profile data
-      fetchData("v1/me/top/tracks?time_range=long_term&limit=3",setTopTracks,""); //main profile data
+      fetchData("v1/me/top/artists?time_range=long_term&limit=5",setTopArtists,""); //main profile data
+      fetchData("v1/me/top/tracks?time_range=long_term&limit=5",setTopTracks,""); //main profile data
     }
   }, [isLogin]);
   
@@ -241,6 +242,7 @@ export default function Home() {
               </div>
               <strong>{userData.display_name}</strong>
               </div>
+              
               <div className="flex flex-row justify-between w-3/5 mt-4">
               <div className="flex flex-col items-center">
               <p className="text-grey">Following</p>
@@ -259,11 +261,20 @@ export default function Home() {
             </div>
             <div className={"flex h-[50vh] w-full justify-center items-center"}>
               <div className={"flex flex-col flex-1 h-full w-1/2"}>
-                <div className="place-self-center">
-                  <strong className="">Top Artists of All Time</strong>
-                  <Button>Hi</Button>
-                </div>
-              <div className="flex flex-row w-full mt-8 items-center">
+                <div className="flex place-content-start items-center">
+                  <strong className="ml-10">Top Artists of All Time</strong>
+                  <Button
+                  className="ml-20" 
+                  variant="ghost"
+                  onClick={()=>{
+                    console.log("clicked")
+                    router.push('/artists')
+                  }}
+                  >
+                  More...
+                  </Button>
+                </div> 
+              <div className="flex flex-row w-full mt-4 items-center">
               <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
                   <Image
                   src={topArtists.items[0].images[1].url}
@@ -276,7 +287,7 @@ export default function Home() {
               </div>
               <p>{topArtists.items[0].name}</p>
                 </div>
-                <div className="flex flex-row w-full mt-8 items-center">
+                <div className="flex flex-row w-full mt-4 items-center">
               <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
                   <Image
                   src={topArtists.items[1].images[1].url}
@@ -289,7 +300,7 @@ export default function Home() {
               </div>
               <p>{topArtists.items[1].name}</p>
                 </div>
-                <div className="flex flex-row w-full mt-8 items-center">
+                <div className="flex flex-row w-full mt-4 items-center">
               <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
                   <Image
                   src={topArtists.items[2].images[1].url}
@@ -302,10 +313,26 @@ export default function Home() {
               </div>
               <p>{topArtists.items[2].name}</p>
                 </div>
+                <div className="flex flex-row w-full mt-4 items-center">
+                <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
+                  <Image
+                  src={topArtists.items[3].images[1].url}
+                  alt="Top Arist Icon 4"   
+                  width={64}
+                  height={64}
+                  objectFit="cover"
+                  priority={true}
+                  />
+              </div>
+              <p>{topArtists.items[3].name}</p>
+                </div>
               </div>
               <div className={"flex flex-col flex-1 h-full w-1/2"}>
-                <strong>Top Tracks of All Time</strong>
-                <div className="flex flex-row w-full mt-8 items-center">
+              <div className="flex place-content-start items-center">
+                  <strong className="ml-10">Top Tracks of All Time</strong>
+                  <Button className="ml-20" variant="ghost">More...</Button>
+                </div> 
+                <div className="flex flex-row w-full mt-4 items-center">
               <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
                   <Image
                   src={topTracks.items[0].album.images[1].url}
@@ -318,7 +345,7 @@ export default function Home() {
               </div>
               <p>{topTracks.items[0].name}</p>
                 </div>
-                <div className="flex flex-row w-full mt-8 items-center">
+                <div className="flex flex-row w-full mt-4 items-center">
               <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
                   <Image
                   src={topTracks.items[1].album.images[1].url}
@@ -331,7 +358,7 @@ export default function Home() {
               </div>
               <p>{topTracks.items[1].name}</p>
                 </div>
-                <div className="flex flex-row w-full mt-8 items-center">
+                <div className="flex flex-row w-full mt-4 items-center">
               <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
                   <Image
                   src={topTracks.items[2].album.images[1].url}
@@ -343,6 +370,19 @@ export default function Home() {
                   />
               </div>
               <p>{topTracks.items[2].name}</p>
+                </div>
+                <div className="flex flex-row w-full mt-4 items-center">
+              <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
+                  <Image
+                  src={topTracks.items[3].album.images[1].url}
+                  alt="Top track Icon 4"   
+                  width={64}
+                  height={64}
+                  objectFit="cover"
+                  priority={true}
+                  />
+              </div>
+              <p>{topTracks.items[3].name}</p>
                 </div>
               </div>
             </div>
