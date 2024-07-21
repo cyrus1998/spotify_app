@@ -17,21 +17,36 @@ export default function Home() {
     width: number;
   }
 
+  interface Followersbody {
+    href: string;
+    total: number;
+  }
   interface Userdataresponse {
-    country?: string;
-    display_name?: string;
-    email?: string;
-    id?: string;
-    images?: Imagebody[];
-    uri?: string;
+    country: string;
+    display_name: string;
+    email: string;
+    id: string;
+    images: Imagebody[];
+    uri: string;
+    followers: Followersbody
   }
 
   const [isLoading, setIsLoading] = useState(true);
   const [isLogin, setIsLogin] = useState(false);
-  const [userData, setUserData] = useState<Userdataresponse>({});
+  const [userData, setUserData] = useState<Userdataresponse>({
+    country: "",
+    display_name: "",
+    email: "",
+    id: "",
+    images: [],
+    uri: "",
+    followers: {
+      href: "",
+      total: 0
+    }
+  });
   const [playLists, setPlayLists] = useState(0);
   const [following, setFollowing] = useState(0);
-  const { theme, setTheme } = useTheme();
   const [topArtists, setTopArtists] = useState<any>({});
   const [topTracks, setTopTracks] = useState<any>({});
   const router = useRouter()
@@ -136,21 +151,9 @@ export default function Home() {
           setIsLoading(false);
         }
       }
-      // if (!isLogin && code) {
-      //   if (!accessToken || accessToken === "undefined") {
-      //     await getToken(code); // first login
-      //   }
-      //   setIsLogin(true); // refresh on page
-      // } else if (!isLogin && refresh_token) {
-      //   await refreshCall();
-      //   setIsLogin(true);
-      // }else if(!isLogin){
-
-      // }
-      // setIsLoading(false);
     };
     checkLogin();
-  }, []);
+  }, [isLogin]);
 
   async function fetchData(endPoint:string,update: (result: any) => void, field:string) {
     try {
@@ -178,7 +181,8 @@ export default function Home() {
     } catch (error) {
       // Handle any errors that occurred during the API call
       console.log(error);
-      throw new Error(error)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(errorMessage);
     }
   }
 
@@ -215,7 +219,7 @@ export default function Home() {
         {isLoading &&
         <LoaderIcon className="animate-spin w-[5vh] h-[5vh]" />
         }
-        {!isLoading && isLogin &&
+        {!isLoading && isLogin && Object.keys(userData).length>0 && Object.keys(topArtists).length>0 && Object.keys(topTracks).length>0 &&
         <div className="flex flex-col flex-none min-h-screen min-w-[15vh] bg-background justify-center items-center">
           <div className="absolute top-0 mt-[4vh]">
             <Image
@@ -365,7 +369,12 @@ export default function Home() {
               <div className={"flex flex-col flex-1 h-full w-1/2"}>
               <div className="flex place-content-start items-center">
                   <strong className="ml-10">Top Tracks of All Time</strong>
-                  <Button className="ml-20" variant="ghost">More...</Button>
+                  <Button className="ml-20"
+                   variant="ghost"
+                   onClick={()=>{
+                    router.push('/tracks')
+                  }}
+                   >More...</Button>
                 </div> 
                 <div className="flex flex-row w-full mt-4 items-center">
               <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">

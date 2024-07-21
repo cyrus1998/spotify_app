@@ -8,8 +8,32 @@ import { Button } from "@/components/ui/button";
 import { LoaderIcon } from "lucide-react";
 import { useRouter } from 'next/navigation'
 
+interface ExternalUrls {
+  spotify: string;
+}
+
+interface Image {
+  url: string;
+  height: number;
+  width: number;
+}
+
+interface TopArtist {
+  external_urls: ExternalUrls;
+  href: string;
+  id: string;
+  name: string;
+  type: string;
+  uri: string;
+  images: Image[];
+}
+
+interface TopArtistsResponse {
+  items: TopArtist[];
+}
+
 export default function Artists() {
-  const [topArtists, setTopArtists] = useState<any>({});
+  const [topArtists, setTopArtists] = useState<TopArtistsResponse>({ items: [] });
   const [timeRange, setTimeRange] = useState<string>("short_term");
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter()
@@ -110,13 +134,13 @@ export default function Artists() {
             )}
 
             {!isLoading &&
-              topArtists.items.map((item) => {
+              topArtists.items.map((item:TopArtist) => {
                 return (
                   <div key={item.name} className="flex flex-col gap-y-2 scroll-y-overflow justify-start">
                     <div className="flex flex-col gap-y-2">
                     <div className="rounded-full h-50 w-50 overflow-hidden hover:cursor-pointer">
                       <Image
-                        src={item.images[2].url}
+                        src={item.images[2].url || ""}
                         alt={item.name}
                         width={200}
                         height={200}

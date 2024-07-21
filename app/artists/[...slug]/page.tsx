@@ -8,24 +8,12 @@ import { Button } from "@/components/ui/button";
 import { LoaderIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-
-interface Track {
-  id: string;
-  name: string;
-  preview_url: string;
-  album: {
-    images: { url: string }[];
-  };
-  artists: { name: string }[];
-  duration_ms: number;
-}
-
-
 export default function Artist({ params }: { params: { slug: string } }) {
-    const [artist,setArtist] = useState(null)
+  const [artist, setArtist] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-useEffect(()=>{
+
+  useEffect(() => {
     setIsLoading(true);
     const fetchData = async () => {
       try {
@@ -34,13 +22,13 @@ useEffect(()=>{
         );
         setArtist(response);
       } catch (error) {
-        console.error("Error fetching top tracks:", error);
+        console.error("Error fetching artist:", error);
       } finally {
         setIsLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [params.slug]);
 
   return (
     <main>
@@ -61,7 +49,7 @@ useEffect(()=>{
                 <Button
                   variant="ghost"
                   className="flex-col flex-1 h-full hover:bg-bgGrey items-center"
-                  onClick={()=>router.push('/')}
+                  onClick={() => router.push("/")}
                 >
                   <Newspaper />
                   <p className="text-grey">Profile</p>
@@ -71,7 +59,7 @@ useEffect(()=>{
                 <Button
                   variant="ghost"
                   className="flex-col flex-1 h-full hover:bg-bgGrey items-center"
-                  onClick={()=>router.push('/artists')}
+                  onClick={() => router.push("/artists")}
                 >
                   <MicVocal />
                   <p className="text-grey">Top Artists</p>
@@ -81,7 +69,7 @@ useEffect(()=>{
                 <Button
                   variant="ghost"
                   className="flex-col flex-1 h-full hover:bg-bgGrey items-center"
-                  onClick={()=>router.push('/tracks')}
+                  onClick={() => router.push("/tracks")}
                 >
                   <Headphones />
                   <p className="text-grey">Top Tracks</p>
@@ -91,8 +79,7 @@ useEffect(()=>{
           </div>
         )}
         <div className="flex flex-grow flex-col h-screen w-screen items-center pt-20 overflow-y-auto">
-          <div className="flex w-4/5 justify-between">
-          </div>
+          <div className="flex w-4/5 justify-between"></div>
 
           <div className="flex flex-col mt-16 h-screen w-3/5 gap-x-4 gap-y-8 items-center justify-center">
             {isLoading && (
@@ -100,42 +87,52 @@ useEffect(()=>{
                 <LoaderIcon className="animate-spin w-[15vh] h-[15vh]" />
               </div>
             )}
-            {!isLoading&&(
-                <div key={artist.name} className="flex flex-col scroll-y-overflow mb-80">
+            {!isLoading && artist && (
+              <div
+                key={artist?.name}
+                className="flex flex-col scroll-y-overflow mb-80"
+              >
                 <div className="flex flex-col items-center gap-y-10">
-                <div className="rounded-full relative w-[300px] h-[300px] overflow-hidden">
-                  <Image
-                    src={artist.images[1].url}
-                    alt={artist.name}
-                    width={300}
-                    height={300}
-                    style={{
-                      objectFit: "cover",
-                      height: "300px",
-                      width: "300px",
-                    }}
-                  />
-                </div>
-                <strong className="self-center font-black text-6xl">{artist.name}</strong>
+                  <div className="rounded-full relative w-[300px] h-[300px] overflow-hidden">
+                    <Image
+                      src={artist?.images[1]?.url}
+                      alt={artist?.name}
+                      width={300}
+                      height={300}
+                      style={{
+                        objectFit: "cover",
+                        height: "300px",
+                        width: "300px",
+                      }}
+                    />
+                  </div>
+                  <strong className="self-center font-black text-6xl">
+                    {artist?.name}
+                  </strong>
                 </div>
                 <div className="flex justify-between mt-14 gap-x-8">
-                    <div className="flex flex-col items-center">
-                            <strong className="text-2xl text-sky-600">{artist.followers.total}</strong>
-                            <strong className="text-sm text-grey">FOLLOWERS</strong>
-                    </div>
-                    <div className="flex flex-col items-center">
-                            {artist?.genres.map((genre:string)=>{
-                                return(
-                                    <strong className="text-xl text-sky-600">{genre}</strong>
-                                )
-                            })
-                            }
-                            <strong className="text-sm text-grey mt-2">GENRES</strong>
-                    </div>
-                    <div className="flex flex-col items-center">
-                            <strong className="text-2xl text-sky-600">{artist.popularity.toString() + "%"}</strong>
-                            <strong className="text-sm text-grey">POPULARITY</strong>
-                    </div>
+                  <div className="flex flex-col items-center">
+                    <strong className="text-2xl text-sky-600">
+                      {artist?.followers.total}
+                    </strong>
+                    <strong className="text-sm text-grey">FOLLOWERS</strong>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    {artist?.genres.map((genre: string) => {
+                      return (
+                        <strong key={genre} className="text-xl text-sky-600">
+                          {genre}
+                        </strong>
+                      );
+                    })}
+                    <strong className="text-sm text-grey mt-2">GENRES</strong>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <strong className="text-2xl text-sky-600">
+                      {artist?.popularity.toString() + "%"}
+                    </strong>
+                    <strong className="text-sm text-grey">POPULARITY</strong>
+                  </div>
                 </div>
               </div>
             )}

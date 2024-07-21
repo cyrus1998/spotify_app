@@ -20,13 +20,12 @@ interface Track {
   duration_ms: number;
 }
 
-interface TopTracksProps {
-  topTracks: { items: Track[] };
-  isLoading: boolean;
+interface TopTracksResponse {
+  items: Track[];
 }
 
 export default function Artists() {
-  const [topTracks, setTopTracks] = useState<any>({});
+  const [topTracks, setTopTracks] = useState<TopTracksResponse>({ items: [] });
   const [timeRange, setTimeRange] = useState<string>("short_term");
   const [isLoading, setIsLoading] = useState(true);
   const [currentTrack, setCurrentTrack] = useState<string | null>(null);
@@ -34,15 +33,16 @@ export default function Artists() {
     null
   ) as React.MutableRefObject<HTMLAudioElement | null>;
   const router = useRouter();
+
   const handlePlayPause = (previewUrl: string, trackId: string) => {
     if (audioRef.current) {
-      //not null
+      // not null
       if (currentTrack === trackId) {
-        //pause when same track is clicked
+        // pause when same track is clicked
         audioRef.current.pause();
         setCurrentTrack(null);
       } else {
-        //pause the playing track and play the clicked track
+        // pause the playing track and play the clicked track
         audioRef.current.pause();
         audioRef.current = new Audio(previewUrl);
         audioRef.current.volume = 0.05;
@@ -50,20 +50,21 @@ export default function Artists() {
         setCurrentTrack(trackId);
       }
     } else {
-      //play the clicked track
+      // play the clicked track
       audioRef.current = new Audio(previewUrl);
       audioRef.current.volume = 0.05;
       audioRef.current.play();
       setCurrentTrack(trackId);
     }
 
-    audioRef.current.onended = () => setCurrentTrack(null); //clear the state when the track is over
+    audioRef.current.onended = () => setCurrentTrack(null); // clear the state when the track is over
   };
+
   useEffect(() => {
     setIsLoading(true);
     const fetchData = async () => {
       try {
-        const response = await apiCall(
+        const response: TopTracksResponse = await apiCall(
           `${process.env.NEXT_PUBLIC_SPOTIFY_API_HOST}v1/me/top/tracks?time_range=${timeRange}&limit=30`
         );
         setTopTracks(response);
@@ -169,7 +170,7 @@ export default function Artists() {
             )}
 
             {!isLoading &&
-              topTracks.items.map((item) => {
+              topTracks.items.map((item: Track) => {
                 return (
                   <div
                     key={item.name}
@@ -184,9 +185,7 @@ export default function Artists() {
                       >
                         <Image
                           src={
-                            item.album?.images[2].url
-                              ? item.album.images[2]?.url
-                              : ""
+                            item.album?.images[2]?.url || ""
                           }
                           alt={item.name}
                           width={50}
@@ -207,7 +206,7 @@ export default function Artists() {
                       <div className="flex-col">
                         <p className="font-bold">{item.name}</p>
                         <p className="text-grey">
-                          {item.artists[0].name + " · " + item.name}
+                          {item.artists[0]?.name + " · " + item.name}
                         </p>
                       </div>
                     </div>
@@ -216,14 +215,7 @@ export default function Artists() {
                         {Math.floor(item.duration_ms / 1000 / 60).toString() +
                           ":" +
                           (Math.floor((item.duration_ms / 1000) % 60).toString()
-                            .length === 1
-                            ? "0" +
-                              Math.floor(
-                                (item.duration_ms / 1000) % 60
-                              ).toString()
-                            : Math.floor(
-                                (item.duration_ms / 1000) % 60
-                              ).toString())}
+                            .padStart(2, '0'))}
                       </p>
                     </div>
                   </div>
