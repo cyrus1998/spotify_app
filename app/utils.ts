@@ -36,6 +36,9 @@ export const apiCall = async (uri) => {
         },
     }
     const response = await fetch (uri, payload)
+    if (response.status!==200){
+        throw new Error(`unable to get the response ${response.status}`)
+    }
     const body = await response.json();
     return body
     

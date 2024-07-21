@@ -6,13 +6,12 @@ import { useEffect, useState } from "react";
 import { apiCall,refreshCall } from "./utils";
 import { useTheme } from "next-themes";
 import Image from "next/image";
-import { Newspaper } from 'lucide-react';
-import { MicVocal } from 'lucide-react';
-import { Headphones } from 'lucide-react';
-import { Router, useRouter } from 'next/navigation'
+import { Newspaper, MicVocal, Headphones } from 'lucide-react';
+import { useRouter } from 'next/navigation'
+import { LoaderIcon } from "lucide-react"
 
 export default function Home() {
-  interface imageBody {
+  interface Imagebody {
     url: string;
     height: number;
     width: number;
@@ -23,11 +22,11 @@ export default function Home() {
     display_name?: string;
     email?: string;
     id?: string;
-    images?: imageBody[];
+    images?: Imagebody[];
     uri?: string;
   }
 
-
+  const [isLoading, setIsLoading] = useState(true);
   const [isLogin, setIsLogin] = useState(false);
   const [userData, setUserData] = useState<Userdataresponse>({});
   const [playLists, setPlayLists] = useState(0);
@@ -82,9 +81,9 @@ export default function Home() {
     if (body.status === 200) {
       localStorage.setItem("access_token", response.access_token);
       localStorage.setItem("refresh_token", response.refresh_token);
-      localStorage.setItem("expire",response.expires_in * 1000 + Date.now());
+      localStorage.setItem("expire",(response.expires_in * 1000 + Date.now()).toString());
     }else{
-      window.location.replace(process.env.NEXT_PUBLIC_HOST)
+      window.location.replace(process.env.NEXT_PUBLIC_HOST ?? "")
     }
   };
 
@@ -116,32 +115,41 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    let code = urlParams.get("code");
-    let accessToken = localStorage.getItem("access_token");
-    let refresh_token = localStorage.getItem("refresh_token");
-    let expire = localStorage.getItem("expire");
-    console.log(
-      "the token",
-      accessToken,
-      typeof accessToken,
-      isLogin,
-      code,
-      accessToken == null || accessToken == "undefined",
-      refresh_token,
-      (refresh_token == null || refresh_token == undefined), 
-      (Date.now() > Number(expire) || isNaN(expire))
-    );
-    if (!isLogin && code) {
-      if (accessToken == null || accessToken == "undefined") {
-        console.log("function should trigger");
-        getToken(code); //first login
+    const checkLogin = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      let code = urlParams.get("code");
+      let accessToken = localStorage.getItem("access_token");
+      let refresh_token = localStorage.getItem("refresh_token");
+      if(!isLogin){
+        if(code){
+          if (!accessToken || accessToken === "undefined") {
+            await getToken(code); // first login
+          }
+          setIsLogin(true); // refresh on page
+        }
+        else if(refresh_token){
+
+          await refreshCall();
+          setIsLogin(true);
+        }else{
+          console.log("not login but show page")
+          setIsLoading(false);
+        }
       }
-      setIsLogin(true); //refresh on page
-    }else if(!isLogin && refresh_token){
-      refreshCall();
-      setIsLogin(true)
-    }
+      // if (!isLogin && code) {
+      //   if (!accessToken || accessToken === "undefined") {
+      //     await getToken(code); // first login
+      //   }
+      //   setIsLogin(true); // refresh on page
+      // } else if (!isLogin && refresh_token) {
+      //   await refreshCall();
+      //   setIsLogin(true);
+      // }else if(!isLogin){
+
+      // }
+      // setIsLoading(false);
+    };
+    checkLogin();
   }, []);
 
   async function fetchData(endPoint:string,update: (result: any) => void, field:string) {
@@ -170,51 +178,80 @@ export default function Home() {
     } catch (error) {
       // Handle any errors that occurred during the API call
       console.log(error);
+      throw new Error(error)
     }
   }
 
   useEffect(() => {
     if (isLogin) {
-      fetchData("v1/me",setUserData,""); //main profile data
+      try{
+        fetchData("v1/me",setUserData,""); //main profile data
       fetchData("v1/me/top/artists?time_range=long_term&limit=5",setTopArtists,""); //main profile data
       fetchData("v1/me/top/tracks?time_range=long_term&limit=5",setTopTracks,""); //main profile data
+      }catch(error){
+        //catch error
+      }
+      
     }
   }, [isLogin]);
   
   useEffect(()=>{
     if(Object.keys(userData).length>0){
-      fetchData("v1/users/"+ userData.id +"/playlists",setPlayLists,"total"); //playlist data
-      fetchFollowingData("v1/me/following?type=artist"); 
+      try{
+        fetchData("v1/users/"+ userData.id +"/playlists",setPlayLists,"total"); //playlist data
+        fetchFollowingData("v1/me/following?type=artist"); 
+        console.log("why can pass to here")
+        setIsLoading(false)
+      }catch(error){
+        //catch error
+      }
     }
   }, [userData])
 
 
   return (
     <main>
-      <div className="min-h-screen flex items-center justify-center bg-bgGrey">
-        {isLogin&&
+      <div className="min-h-screen flex items-center justify-center bg-bgGrey overflow-y-scroll">
+        {isLoading &&
+        <LoaderIcon className="animate-spin w-[5vh] h-[5vh]" />
+        }
+        {!isLoading && isLogin &&
         <div className="flex flex-col flex-none min-h-screen min-w-[15vh] bg-background justify-center items-center">
+          <div className="absolute top-0 mt-[4vh]">
+            <Image
+            src="/img/Spotify_Logo_RGB_White.png"
+            alt="spotify_white_logo"
+            width={236}
+            height={70} 
+            style={{ width: 'auto', height: 'auto' }} 
+            />
+
+        </div>
         <div className="flex w-full aspect-[2/1] border-l-4 border-l-green mb-[4vh]">
-        <Button variant="ghost" className="flex-col flex-1 h-full hover:bg-bgGrey items-center">
+        <Button variant="ghost" className="flex-col flex-1 h-full hover:bg-bgGrey items-center"
+        onClick={()=>router.push('/')}>
           <Newspaper />
           <p className="text-grey">Profile</p>
         </Button>
         </div>
         <div className="flex w-full aspect-[2/1] mb-[4vh]">
-        <Button variant="ghost" className="flex-col flex-1 h-full hover:bg-bgGrey items-center">
+        <Button variant="ghost" 
+        className="flex-col flex-1 h-full hover:bg-bgGrey items-center"
+        onClick={()=>router.push('/artists')}>
           <MicVocal />
           <p className="text-grey">Top Artists</p>
         </Button>
         </div>
         <div className="flex w-full aspect-[2/1]">
-        <Button variant="ghost" className="flex-col flex-1 h-full hover:bg-bgGrey items-center">
+        <Button variant="ghost" className="flex-col flex-1 h-full hover:bg-bgGrey items-center"
+        onClick={()=>router.push('/tracks')}>
           <Headphones />
           <p className="text-grey">Top Tracks</p>
         </Button>
         </div>
       </div>
         }
-        {!isLogin && (
+        {!isLoading && !isLogin && (
           <div className="flex flex-col items-center justify-center space-y-8">
             <strong className="text-3xl">Spotify Profile</strong>
             <Button size="lg" onClick={() => loginHandler()}>
@@ -222,27 +259,26 @@ export default function Home() {
             </Button>
           </div>
         )}
-        {isLogin && Object.keys(userData).length>0 && Object.keys(topArtists).length>0 && Object.keys(topTracks).length>0&&(
+        {!isLoading && isLogin && Object.keys(userData).length>0 && Object.keys(topArtists).length>0 && Object.keys(topTracks).length>0 &&(
           <div className="flex flex-grow flex-col min-h-screen min-w-screen items-center">
             <div
               className={
-                "flex flex-col h-[30vh] w-4/5 items-center mt-8"
+                "flex flex-col h-[30vh] w-2/5 items-center mt-16 justify-between"
               }
             >
               <div className="flex flex-row items-center justify-between w-[22.5vh]">
-              <div className="rounded-full h-16 w-16 overflow-hidden">
+              <div className="rounded-full h-150 w-150 overflow-hidden ml-[3vh]">
               <Image
               src={userData.images[1].url}
               alt="User Icon"   
-              width={64}
-              height={64}
-              objectFit="cover"
+              width={150}
+              height={150}
+              style={{objectFit:"cover"}}
               priority={true}
               />
               </div>
-              <strong>{userData.display_name}</strong>
               </div>
-              
+              <strong className="text-3xl">{userData.display_name}</strong>
               <div className="flex flex-row justify-between w-3/5 mt-4">
               <div className="flex flex-col items-center">
               <p className="text-grey">Following</p>
@@ -259,7 +295,7 @@ export default function Home() {
               </div>
 
             </div>
-            <div className={"flex h-[50vh] w-full justify-center items-center"}>
+            <div className={"flex h-[50vh] w-[4/5] justify-center items-center mt-16"}>
               <div className={"flex flex-col flex-1 h-full w-1/2"}>
                 <div className="flex place-content-start items-center">
                   <strong className="ml-10">Top Artists of All Time</strong>
@@ -267,7 +303,6 @@ export default function Home() {
                   className="ml-20" 
                   variant="ghost"
                   onClick={()=>{
-                    console.log("clicked")
                     router.push('/artists')
                   }}
                   >
@@ -278,10 +313,10 @@ export default function Home() {
               <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
                   <Image
                   src={topArtists.items[0].images[1].url}
-                  alt="Top Arist Icon 1"   
+                  alt="Top artists Icon 1"   
                   width={64}
                   height={64}
-                  objectFit="cover"
+                  style={{objectFit:"cover"}}
                   priority={true}
                   />
               </div>
@@ -291,10 +326,10 @@ export default function Home() {
               <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
                   <Image
                   src={topArtists.items[1].images[1].url}
-                  alt="Top Arist Icon 2"   
+                  alt="Top artists Icon 2"   
                   width={64}
                   height={64}
-                  objectFit="cover"
+                  style={{objectFit:"cover"}}
                   priority={true}
                   />
               </div>
@@ -304,10 +339,10 @@ export default function Home() {
               <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
                   <Image
                   src={topArtists.items[2].images[1].url}
-                  alt="Top Arist Icon 3"   
+                  alt="Top artists Icon 3"   
                   width={64}
                   height={64}
-                  objectFit="cover"
+                  style={{objectFit:"cover"}}
                   priority={true}
                   />
               </div>
@@ -317,10 +352,10 @@ export default function Home() {
                 <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
                   <Image
                   src={topArtists.items[3].images[1].url}
-                  alt="Top Arist Icon 4"   
+                  alt="Top artists Icon 4"   
                   width={64}
                   height={64}
-                  objectFit="cover"
+                  style={{objectFit:"cover"}}
                   priority={true}
                   />
               </div>
@@ -339,7 +374,7 @@ export default function Home() {
                   alt="Top track Icon 1"   
                   width={64}
                   height={64}
-                  objectFit="cover"
+                  style={{objectFit:"cover"}}
                   priority={true}
                   />
               </div>
@@ -352,7 +387,7 @@ export default function Home() {
                   alt="Top track Icon 2"   
                   width={64}
                   height={64}
-                  objectFit="cover"
+                  style={{objectFit:"cover"}}
                   priority={true}
                   />
               </div>
@@ -365,7 +400,7 @@ export default function Home() {
                   alt="Top track Icon 3"   
                   width={64}
                   height={64}
-                  objectFit="cover"
+                  style={{objectFit:"cover"}}
                   priority={true}
                   />
               </div>
@@ -378,7 +413,7 @@ export default function Home() {
                   alt="Top track Icon 4"   
                   width={64}
                   height={64}
-                  objectFit="cover"
+                  style={{objectFit:"cover"}}
                   priority={true}
                   />
               </div>
