@@ -74,7 +74,7 @@ export default function Home() {
 
   const getToken = async (code: string) => {
     // stored in the previous step
-    console.log("getToken is called");
+    // console.log("getToken is called");
     let codeVerifier = localStorage.getItem("code_verifier");
     const params = new URLSearchParams();
     params.append("client_id", process.env.NEXT_PUBLIC_CLIENT_ID ?? "");
@@ -147,7 +147,7 @@ export default function Home() {
           await refreshCall();
           setIsLogin(true);
         }else{
-          console.log("not login but show page")
+          // console.log("not login but show page")
           setIsLoading(false);
         }
       }
@@ -204,7 +204,7 @@ export default function Home() {
       try{
         fetchData("v1/users/"+ userData.id +"/playlists",setPlayLists,"total"); //playlist data
         fetchFollowingData("v1/me/following?type=artist"); 
-        console.log("why can pass to here")
+        // console.log("why can pass to here")
         setIsLoading(false)
       }catch(error){
         //catch error

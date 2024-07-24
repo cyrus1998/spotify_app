@@ -3,7 +3,7 @@ export const apiCall = async (uri: string) => {
     const refresh_token = localStorage.getItem('refresh_token');
     const expire = localStorage.getItem('expire');
     
-    console.log("time checking", expire, Date.now(), Date.now() > Number(expire));
+    // console.log("time checking", expire, Date.now(), Date.now() > Number(expire));
     
     if (!!refresh_token && Date.now() > Number(expire)) {
       const refreshUrl = "https://accounts.spotify.com/api/token";
@@ -56,7 +56,7 @@ export const apiCall = async (uri: string) => {
     const refresh_token = localStorage.getItem('refresh_token');
     const expire = localStorage.getItem('expire');
     
-    console.log("time checking", expire, Date.now(), Date.now() > Number(expire));
+    // console.log("time checking", expire, Date.now(), Date.now() > Number(expire));
     
     if (!!refresh_token && Date.now() > Number(expire)) {
       const refreshUrl = "https://accounts.spotify.com/api/token";
