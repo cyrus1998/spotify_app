@@ -9,14 +9,47 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import NavBar from '@/components/navBar';
 
-interface ArtistProps {
+interface Artist {
+  external_urls: {
+    spotify: string;
+  };
+  href: string;
+  id: string;
+  name: string;
+  type: string;
+  uri: string;
+}
+
+interface Track {
+  album_type: string;
+  total_tracks: number;
+  available_markets: string[];
+  external_urls: {
+    spotify: string;
+  };
+  href: string;
+  id: string;
+  images: {
+    url: string;
+    height: number;
+    width: number;
+  }[];
+  name: string;
+  release_date: string;
+  release_date_precision: string;
+  type: string;
+  uri: string;
+  artists: Artist[];
+}
+
+interface TrackProps {
   readonly params: {
     readonly slug: string;
   };
 }
 
-export default function Artist({ params }: ArtistProps) {
-  const [artist, setArtist] = useState<any>(null);
+export default function Track({ params }: TrackProps) {
+  const [track, setTrack] = useState<Track | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const { isLogin, handleLogout } = useAuth();
@@ -26,16 +59,17 @@ export default function Artist({ params }: ArtistProps) {
       router.push("/");
     }
   }, [isLogin, router]);
+
   useEffect(() => {
     setIsLoading(true);
     const fetchData = async () => {
       try {
         const response = await apiCall(
-          `${process.env.NEXT_PUBLIC_SPOTIFY_API_HOST}v1/artists/${params.slug}`
+          `${process.env.NEXT_PUBLIC_SPOTIFY_API_HOST}v1/tracks/${params.slug}`
         );
-        setArtist(response);
+        setTrack(response.album);
       } catch (error) {
-        console.error("Error fetching artist:", error);
+        console.error("Error fetching track:", error);
       } finally {
         setIsLoading(false);
       }
@@ -56,16 +90,13 @@ export default function Artist({ params }: ArtistProps) {
                 <LoaderIcon className="animate-spin w-[15vh] h-[15vh]" />
               </div>
             )}
-            {!isLoading && artist && (
-              <div
-                key={artist?.name}
-                className="flex flex-col scroll-y-overflow mb-80"
-              >
+            {!isLoading && track && (
+              <div key={track.name} className="flex flex-col scroll-y-overflow mb-80">
                 <div className="flex flex-col items-center gap-y-10">
-                  <div className="rounded-full relative w-[300px] h-[300px] overflow-hidden">
+                  <div className="relative w-[300px] h-[300px] overflow-hidden">
                     <Image
-                      src={artist?.images[1]?.url}
-                      alt={artist?.name}
+                      src={track.images[0]?.url}
+                      alt={track.name}
                       width={300}
                       height={300}
                       style={{
@@ -76,31 +107,33 @@ export default function Artist({ params }: ArtistProps) {
                     />
                   </div>
                   <strong className="self-center font-black text-6xl">
-                    {artist?.name}
+                    {track.name}
                   </strong>
                 </div>
                 <div className="flex justify-between mt-14 gap-x-8">
                   <div className="flex flex-col items-center">
                     <strong className="text-2xl text-sky-600">
-                      {artist?.followers.total}
+                      {track.release_date}
                     </strong>
-                    <strong className="text-sm text-grey">FOLLOWERS</strong>
+                    <strong className="text-sm text-grey">RELEASE DATE</strong>
                   </div>
                   <div className="flex flex-col items-center">
-                    {artist?.genres.map((genre: string) => {
-                      return (
-                        <strong key={genre} className="text-xl text-sky-600">
-                          {genre}
-                        </strong>
-                      );
-                    })}
-                    <strong className="text-sm text-grey mt-2">GENRES</strong>
+                    {track.artists.map((artist) => (
+                      <button
+                        key={artist.id}
+                        className="text-xl text-sky-600 border-0 bg-transparent p-0 hover:underline"
+                        onClick={() => router.push(`/artists/${artist.id}`)}
+                      >
+                        {artist.name}
+                      </button>
+                    ))}
+                    <strong className="text-sm text-grey mt-2">ARTISTS</strong>
                   </div>
                   <div className="flex flex-col items-center">
                     <strong className="text-2xl text-sky-600">
-                      {artist?.popularity.toString() + "%"}
+                      {track.total_tracks}
                     </strong>
-                    <strong className="text-sm text-grey">POPULARITY</strong>
+                    <strong className="text-sm text-grey">TOTAL TRACKS</strong>
                   </div>
                 </div>
               </div>
@@ -110,4 +143,4 @@ export default function Artist({ params }: ArtistProps) {
       </div>
     </main>
   );
-}
+} 

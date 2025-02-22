@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { apiCall } from "../utils";
 import Image from "next/image";
-import { Newspaper, MicVocal, Headphones } from "lucide-react";
+import { LoaderIcon, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { LoaderIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Play } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import NavBar from '@/components/navBar';
 
 interface Track {
   id: string;
@@ -15,6 +15,7 @@ interface Track {
   preview_url: string;
   album: {
     images: { url: string }[];
+    external_urls: { spotify: string };
   };
   artists: { name: string }[];
   duration_ms: number;
@@ -24,40 +25,23 @@ interface TopTracksResponse {
   items: Track[];
 }
 
-export default function Artists() {
+export default function Tracks() {
   const [topTracks, setTopTracks] = useState<TopTracksResponse>({ items: [] });
   const [timeRange, setTimeRange] = useState<string>("short_term");
   const [isLoading, setIsLoading] = useState(true);
   const [currentTrack, setCurrentTrack] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(
-    null
-  ) as React.MutableRefObject<HTMLAudioElement | null>;
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const router = useRouter();
+  const { isLogin, handleLogout } = useAuth();
 
-  const handlePlayPause = (previewUrl: string, trackId: string) => {
-    if (audioRef.current) {
-      // not null
-      if (currentTrack === trackId) {
-        // pause when same track is clicked
-        audioRef.current.pause();
-        setCurrentTrack(null);
-      } else {
-        // pause the playing track and play the clicked track
-        audioRef.current.pause();
-        audioRef.current = new Audio(previewUrl);
-        audioRef.current.volume = 0.05;
-        audioRef.current.play();
-        setCurrentTrack(trackId);
-      }
-    } else {
-      // play the clicked track
-      audioRef.current = new Audio(previewUrl);
-      audioRef.current.volume = 0.05;
-      audioRef.current.play();
-      setCurrentTrack(trackId);
+  useEffect(() => {
+    if (isLogin === false) {
+      router.push("/");
     }
+  }, [isLogin, router]);
 
-    audioRef.current.onended = () => setCurrentTrack(null); // clear the state when the track is over
+  const handlePlayPause = (spotifyUrl: string) => {
+    window.open(spotifyUrl, '_blank');
   };
 
   useEffect(() => {
@@ -79,90 +63,34 @@ export default function Artists() {
 
   return (
     <main>
-      <div className="min-h-screen flex flex-row bg-bgGrey">
-        {!isLoading && (
-          <div>
-            <div className="flex flex-col flex-none h-screen min-w-[15vh] bg-background justify-center items-center fixed top-0">
-              <div className="absolute top-0 mt-[4vh]">
-                <Image
-                  src="/img/Spotify_Logo_RGB_White.png"
-                  alt="spotify_white_logo"
-                  width={236}
-                  height={70}
-                  style={{ width: "auto", height: "auto" }}
-                />
-              </div>
-              <div className="flex w-full aspect-[2/1] mb-[4vh]">
-                <Button
-                  variant="ghost"
-                  className="flex-col flex-1 h-full hover:bg-bgGrey items-center"
-                  onClick={() => router.push("/")}
-                >
-                  <Newspaper />
-                  <p className="text-grey">Profile</p>
-                </Button>
-              </div>
-              <div className="flex w-full aspect-[2/1] mb-[4vh]">
-                <Button
-                  variant="ghost"
-                  className="flex-col flex-1 h-full hover:bg-bgGrey items-center"
-                  onClick={() => router.push("/artists")}
-                >
-                  <MicVocal />
-                  <p className="text-grey">Top Artists</p>
-                </Button>
-              </div>
-              <div className="flex w-full aspect-[2/1]">
-                <Button
-                  variant="ghost"
-                  className="flex-col flex-1 h-full hover:bg-bgGrey border-l-4 border-l-green items-center"
-                  onClick={() => router.push("/tracks")}
-                >
-                  <Headphones />
-                  <p className="text-grey">Top Tracks</p>
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-        <div className="flex flex-grow flex-col h-screen w-screen items-center pt-20 overflow-y-auto">
-          <div className="flex w-4/5 justify-between">
+      <div className="min-h-screen flex flex-col md:flex-row bg-bgGrey">
+        {!isLoading && <NavBar handleLogout={handleLogout} />}
+        <div className="flex flex-grow flex-col h-screen w-screen items-center pt-[15vh] md:pt-20 md:ml-[15vh] overflow-y-auto">
+          <div className="flex w-[90%] md:w-4/5 flex-col md:flex-row gap-y-4 md:gap-y-0 justify-between">
             <strong className="text-3xl">Top Tracks</strong>
-            <div className="flex w-1/4 justify-between items-end">
-              <strong
-                className={
-                  (timeRange === "long_term"
-                    ? "underline"
-                    : "text-grey hover:text-white") + " 2xl cursor-pointer"
-                }
-                onClick={() => setTimeRange("long_term")}
-              >
+            <div className="flex w-full md:w-1/4 justify-between items-end">
+              <Button
+                variant="ghost"
+                className={(timeRange === "long_term" ? "underline" : "text-grey hover:text-white") + " 2xl"}
+                onClick={() => setTimeRange("long_term")}>
                 All Time
-              </strong>
-              <strong
-                className={
-                  (timeRange === "medium_term"
-                    ? "underline"
-                    : "text-grey hover:text-white") + " 2xl cursor-pointer"
-                }
-                onClick={() => setTimeRange("medium_term")}
-              >
+              </Button>
+              <Button
+                variant="ghost"
+                className={(timeRange === "medium_term" ? "underline" : "text-grey hover:text-white") + " 2xl"}
+                onClick={() => setTimeRange("medium_term")}>
                 6 Months
-              </strong>
-              <strong
-                className={
-                  (timeRange === "short_term"
-                    ? "underline"
-                    : "text-grey hover:text-white") + " 2xl cursor-pointer"
-                }
-                onClick={() => setTimeRange("short_term")}
-              >
+              </Button>
+              <Button
+                variant="ghost"
+                className={(timeRange === "short_term" ? "underline" : "text-grey hover:text-white") + " 2xl"}
+                onClick={() => setTimeRange("short_term")}>
                 4 Weeks
-              </strong>
+              </Button>
             </div>
           </div>
 
-          <div className="flex flex-col justify-between mt-16 h-screen w-3/5 gap-x-4 gap-y-8">
+          <div className="flex flex-col justify-between mt-8 md:mt-16 h-screen w-[90%] md:w-3/5 gap-x-4 gap-y-8">
             {isLoading && (
               <div className="flex items-center justify-center w-full h-full">
                 <LoaderIcon className="animate-spin w-[15vh] h-[15vh]" />
@@ -177,16 +105,13 @@ export default function Artists() {
                     className="flex gap-y-2 scroll-y-overflow justify-between"
                   >
                     <div className="flex gap-x-4">
-                      <div
-                        className="relative h-50 w-50 overflow-hidden"
-                        onClick={() =>
-                          handlePlayPause(item.preview_url, item.id)
-                        }
+                      <button
+                        className="relative h-50 w-50 overflow-hidden border-0 bg-transparent p-0"
+                        onClick={() => handlePlayPause(item.album?.external_urls.spotify)}
+                        aria-label={`Play ${item.name}`}
                       >
                         <Image
-                          src={
-                            item.album?.images[2]?.url || ""
-                          }
+                          src={item.album?.images[2]?.url || ""}
                           alt={item.name}
                           width={50}
                           height={50}
@@ -196,13 +121,12 @@ export default function Artists() {
                             width: "50px",
                           }}
                         />
-                        {/* <div className="absolute inset-0 bg-black opacity-50"></div> */}
                         <div className="absolute inset-0 overflow-hidden bg-fixed bg-black opacity-0 transition duration-300 ease-in-out hover:opacity-50 hover:cursor-pointer">
                           <div className="h-full w-full flex justify-center items-center">
                             <Play />
                           </div>
                         </div>
-                      </div>
+                      </button>
                       <div className="flex-col">
                         <p className="font-bold">{item.name}</p>
                         <p className="text-grey">

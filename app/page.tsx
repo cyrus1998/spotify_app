@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button";
 import { createHash } from "crypto";
 import querystring from "querystring";
 import { useEffect, useState } from "react";
-import { apiCall,refreshCall } from "./utils";
-import { useTheme } from "next-themes";
+import { apiCall, refreshCall } from "./utils";
 import Image from "next/image";
-import { Newspaper, MicVocal, Headphones } from 'lucide-react';
-import { useRouter } from 'next/navigation'
-import { LoaderIcon } from "lucide-react"
+import { LoaderIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from "@/contexts/AuthContext";
+import NavBar from '@/components/navBar';
 
 export default function Home() {
   interface Imagebody {
@@ -32,7 +32,7 @@ export default function Home() {
   }
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isLogin, setIsLogin] = useState(false);
+  const {isLogin, setIsLogin, handleLogout} = useAuth();
   const [userData, setUserData] = useState<Userdataresponse>({
     country: "",
     display_name: "",
@@ -110,7 +110,7 @@ export default function Home() {
       localStorage.removeItem("expire");
       const codeVerifier: string = generateRandomString(64);
       const hashed = await sha256(codeVerifier);
-      const codeChallenge = base64encode(Buffer.from(hashed, "hex"));
+      const codeChallenge = base64encode(new Uint8Array(Buffer.from(hashed, "hex")));
       const scope = "user-read-private user-read-email user-follow-read user-top-read";
       window.localStorage.setItem("code_verifier", codeVerifier);
       const redirectUri =
@@ -155,20 +155,21 @@ export default function Home() {
     checkLogin();
   }, [isLogin]);
 
-  async function fetchData(endPoint:string,update: (result: any) => void, field:string) {
+  async function fetchData(endPoint:string, update: (result: any) => void, field:string) {
     try {
       const result = await apiCall(
         process.env.NEXT_PUBLIC_SPOTIFY_API_HOST + endPoint
       );
-      // Handle the resolved data here
-      if (field !== ""){
+      if (field !== "") {
         update(result[field])
-      }else{
+      } else {
         update(result);
       }
     } catch (error) {
-      // Handle any errors that occurred during the API call
-      console.log(error);
+      if (error instanceof Error && error.message.includes('401')) {
+        handleLogout();
+      }
+      console.error("Error fetching data:", error);
     }
   }
   
@@ -188,16 +189,36 @@ export default function Home() {
 
   useEffect(() => {
     if (isLogin) {
-      try{
-        fetchData("v1/me",setUserData,""); //main profile data
-      fetchData("v1/me/top/artists?time_range=long_term&limit=5",setTopArtists,""); //main profile data
-      fetchData("v1/me/top/tracks?time_range=long_term&limit=5",setTopTracks,""); //main profile data
-      }catch(error){
-        //catch error
-      }
-      
+      Promise.all([
+        fetchData("v1/me", setUserData, ""),
+        fetchData("v1/me/top/artists?time_range=long_term&limit=5", setTopArtists, ""),
+        fetchData("v1/me/top/tracks?time_range=long_term&limit=5", setTopTracks, "")
+      ]).catch(error => {
+        console.error("Error fetching data:", error);
+        if (error instanceof Error && error.message.includes('401')) {
+          handleLogout();
+        }
+      });
+    } else {
+      // Clear state data when logged out
+      setUserData({
+        country: "",
+        display_name: "",
+        email: "",
+        id: "",
+        images: [],
+        uri: "",
+        followers: {
+          href: "",
+          total: 0
+        }
+      });
+      setTopArtists({});
+      setTopTracks({});
+      setPlayLists(0);
+      setFollowing(0);
     }
-  }, [isLogin]);
+  }, [isLogin, handleLogout]);
   
   useEffect(()=>{
     if(Object.keys(userData).length>0){
@@ -208,52 +229,19 @@ export default function Home() {
         setIsLoading(false)
       }catch(error){
         //catch error
+        console.log("error occurs when fetching userdata",error);
       }
     }
   }, [userData])
 
-
   return (
     <main>
-      <div className="min-h-screen flex items-center justify-center bg-bgGrey overflow-y-scroll">
+      <div className="min-h-screen flex flex-col md:flex-row items-center justify-center bg-bgGrey overflow-y-scroll">
         {isLoading &&
-        <LoaderIcon className="animate-spin w-[5vh] h-[5vh]" />
+          <LoaderIcon className="animate-spin w-[5vh] h-[5vh]" />
         }
         {!isLoading && isLogin && Object.keys(userData).length>0 && Object.keys(topArtists).length>0 && Object.keys(topTracks).length>0 &&
-        <div className="flex flex-col flex-none min-h-screen min-w-[15vh] bg-background justify-center items-center">
-          <div className="absolute top-0 mt-[4vh]">
-            <Image
-            src="/img/Spotify_Logo_RGB_White.png"
-            alt="spotify_white_logo"
-            width={236}
-            height={70} 
-            style={{ width: 'auto', height: 'auto' }} 
-            />
-
-        </div>
-        <div className="flex w-full aspect-[2/1] border-l-4 border-l-green mb-[4vh]">
-        <Button variant="ghost" className="flex-col flex-1 h-full hover:bg-bgGrey items-center"
-        onClick={()=>router.push('/')}>
-          <Newspaper />
-          <p className="text-grey">Profile</p>
-        </Button>
-        </div>
-        <div className="flex w-full aspect-[2/1] mb-[4vh]">
-        <Button variant="ghost" 
-        className="flex-col flex-1 h-full hover:bg-bgGrey items-center"
-        onClick={()=>router.push('/artists')}>
-          <MicVocal />
-          <p className="text-grey">Top Artists</p>
-        </Button>
-        </div>
-        <div className="flex w-full aspect-[2/1]">
-        <Button variant="ghost" className="flex-col flex-1 h-full hover:bg-bgGrey items-center"
-        onClick={()=>router.push('/tracks')}>
-          <Headphones />
-          <p className="text-grey">Top Tracks</p>
-        </Button>
-        </div>
-      </div>
+          <NavBar handleLogout={handleLogout} />
         }
         {!isLoading && !isLogin && (
           <div className="flex flex-col items-center justify-center space-y-8">
@@ -264,10 +252,10 @@ export default function Home() {
           </div>
         )}
         {!isLoading && isLogin && Object.keys(userData).length>0 && Object.keys(topArtists).length>0 && Object.keys(topTracks).length>0 &&(
-          <div className="flex flex-grow flex-col min-h-screen min-w-screen items-center">
+          <div className="flex flex-grow flex-col min-h-screen w-screen items-center pt-[15vh] md:pt-20 md:ml-[15vh]">
             <div
               className={
-                "flex flex-col h-[30vh] w-2/5 items-center mt-16 justify-between"
+                "flex flex-col h-[30vh] w-[90%] md:w-2/5 items-center mt-8 md:mt-16 justify-between"
               }
             >
               <div className="flex flex-row items-center justify-between w-[22.5vh]">
@@ -299,7 +287,7 @@ export default function Home() {
               </div>
 
             </div>
-            <div className={"flex h-[50vh] w-[4/5] justify-center items-center mt-16"}>
+            <div className="flex flex-col md:flex-row h-auto md:h-[50vh] w-[90%] md:w-[4/5] justify-center items-center mt-8 md:mt-16">
               <div className={"flex flex-col flex-1 h-full w-1/2"}>
                 <div className="flex place-content-start items-center">
                   <strong className="ml-10">Top Artists of All Time</strong>
@@ -314,7 +302,11 @@ export default function Home() {
                   </Button>
                 </div> 
               <div className="flex flex-row w-full mt-4 items-center">
-              <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
+                <button
+                  className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10 border-0 bg-transparent p-0"
+                  onClick={() => router.push('/artists/' + topArtists.items[0].id)}
+                  aria-label={`View ${topArtists.items[0].name}'s details`}
+                >
                   <Image
                   src={topArtists.items[0].images[1].url}
                   alt="Top artists Icon 1"   
@@ -323,11 +315,20 @@ export default function Home() {
                   style={{objectFit:"cover"}}
                   priority={true}
                   />
+                </button>
+                <button
+                  className="border-0 bg-transparent p-0 hover:underline"
+                  onClick={() => router.push('/artists/' + topArtists.items[0].id)}
+                >
+                  <p>{topArtists.items[0].name}</p>
+                </button>
               </div>
-              <p>{topArtists.items[0].name}</p>
-                </div>
-                <div className="flex flex-row w-full mt-4 items-center">
-              <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
+              <div className="flex flex-row w-full mt-4 items-center">
+                <button
+                  className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10 border-0 bg-transparent p-0"
+                  onClick={() => router.push('/artists/' + topArtists.items[1].id)}
+                  aria-label={`View ${topArtists.items[1].name}'s details`}
+                >
                   <Image
                   src={topArtists.items[1].images[1].url}
                   alt="Top artists Icon 2"   
@@ -336,34 +337,57 @@ export default function Home() {
                   style={{objectFit:"cover"}}
                   priority={true}
                   />
+                </button>
+                <button
+                  className="border-0 bg-transparent p-0 hover:underline"
+                  onClick={() => router.push('/artists/' + topArtists.items[1].id)}
+                >
+                  <p>{topArtists.items[1].name}</p>
+                </button>
               </div>
-              <p>{topArtists.items[1].name}</p>
+                <div className="flex flex-row w-full mt-4 items-center">
+                  <button
+                    className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10 border-0 bg-transparent p-0"
+                    onClick={() => router.push('/artists/' + topArtists.items[2].id)}
+                    aria-label={`View ${topArtists.items[2].name}'s details`}
+                  >
+                    <Image
+                    src={topArtists.items[2].images[1].url}
+                    alt="Top artists Icon 3"   
+                    width={64}
+                    height={64}
+                    style={{objectFit:"cover"}}
+                    priority={true}
+                    />
+                  </button>
+                  <button
+                    className="border-0 bg-transparent p-0 hover:underline"
+                    onClick={() => router.push('/artists/' + topArtists.items[2].id)}
+                  >
+                    <p>{topArtists.items[2].name}</p>
+                  </button>
                 </div>
                 <div className="flex flex-row w-full mt-4 items-center">
-              <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
-                  <Image
-                  src={topArtists.items[2].images[1].url}
-                  alt="Top artists Icon 3"   
-                  width={64}
-                  height={64}
-                  style={{objectFit:"cover"}}
-                  priority={true}
-                  />
-              </div>
-              <p>{topArtists.items[2].name}</p>
-                </div>
-                <div className="flex flex-row w-full mt-4 items-center">
-                <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
-                  <Image
-                  src={topArtists.items[3].images[1].url}
-                  alt="Top artists Icon 4"   
-                  width={64}
-                  height={64}
-                  style={{objectFit:"cover"}}
-                  priority={true}
-                  />
-              </div>
-              <p>{topArtists.items[3].name}</p>
+                  <button
+                    className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10 border-0 bg-transparent p-0"
+                    onClick={() => router.push('/artists/' + topArtists.items[3].id)}
+                    aria-label={`View ${topArtists.items[3].name}'s details`}
+                  >
+                    <Image
+                    src={topArtists.items[3].images[1].url}
+                    alt="Top artists Icon 4"   
+                    width={64}
+                    height={64}
+                    style={{objectFit:"cover"}}
+                    priority={true}
+                    />
+                  </button>
+                  <button
+                    className="border-0 bg-transparent p-0 hover:underline"
+                    onClick={() => router.push('/artists/' + topArtists.items[3].id)}
+                  >
+                    <p>{topArtists.items[3].name}</p>
+                  </button>
                 </div>
               </div>
               <div className={"flex flex-col flex-1 h-full w-1/2"}>
@@ -377,56 +401,92 @@ export default function Home() {
                    >More...</Button>
                 </div> 
                 <div className="flex flex-row w-full mt-4 items-center">
-              <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
-                  <Image
-                  src={topTracks.items[0].album.images[1].url}
-                  alt="Top track Icon 1"   
-                  width={64}
-                  height={64}
-                  style={{objectFit:"cover"}}
-                  priority={true}
-                  />
-              </div>
-              <p>{topTracks.items[0].name}</p>
+                  <button
+                    className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10 border-0 bg-transparent p-0"
+                    onClick={() => router.push('/tracks/' + topTracks.items[0].id)}
+                    aria-label={`View ${topTracks.items[0].name}'s details`}
+                  >
+                    <Image
+                    src={topTracks.items[0].album.images[1].url}
+                    alt="Top track Icon 1"   
+                    width={64}
+                    height={64}
+                    style={{objectFit:"cover"}}
+                    priority={true}
+                    />
+                  </button>
+                  <button
+                    className="border-0 bg-transparent p-0 hover:underline"
+                    onClick={() => router.push('/tracks/' + topTracks.items[0].id)}
+                  >
+                    <p>{topTracks.items[0].name}</p>
+                  </button>
                 </div>
                 <div className="flex flex-row w-full mt-4 items-center">
-              <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
-                  <Image
-                  src={topTracks.items[1].album.images[1].url}
-                  alt="Top track Icon 2"   
-                  width={64}
-                  height={64}
-                  style={{objectFit:"cover"}}
-                  priority={true}
-                  />
-              </div>
-              <p>{topTracks.items[1].name}</p>
+                  <button
+                    className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10 border-0 bg-transparent p-0"
+                    onClick={() => router.push('/tracks/' + topTracks.items[1].id)}
+                    aria-label={`View ${topTracks.items[1].name}'s details`}
+                  >
+                    <Image
+                    src={topTracks.items[1].album.images[1].url}
+                    alt="Top track Icon 2"   
+                    width={64}
+                    height={64}
+                    style={{objectFit:"cover"}}
+                    priority={true}
+                    />
+                  </button>
+                  <button
+                    className="border-0 bg-transparent p-0 hover:underline"
+                    onClick={() => router.push('/tracks/' + topTracks.items[1].id)}
+                  >
+                    <p>{topTracks.items[1].name}</p>
+                  </button>
                 </div>
                 <div className="flex flex-row w-full mt-4 items-center">
-              <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
-                  <Image
-                  src={topTracks.items[2].album.images[1].url}
-                  alt="Top track Icon 3"   
-                  width={64}
-                  height={64}
-                  style={{objectFit:"cover"}}
-                  priority={true}
-                  />
-              </div>
-              <p>{topTracks.items[2].name}</p>
+                  <button
+                    className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10 border-0 bg-transparent p-0"
+                    onClick={() => router.push('/tracks/' + topTracks.items[2].id)}
+                    aria-label={`View ${topTracks.items[2].name}'s details`}
+                  >
+                    <Image
+                    src={topTracks.items[2].album.images[1].url}
+                    alt="Top track Icon 3"   
+                    width={64}
+                    height={64}
+                    style={{objectFit:"cover"}}
+                    priority={true}
+                    />
+                  </button>
+                  <button
+                    className="border-0 bg-transparent p-0 hover:underline"
+                    onClick={() => router.push('/tracks/' + topTracks.items[2].id)}
+                  >
+                    <p>{topTracks.items[2].name}</p>
+                  </button>
                 </div>
                 <div className="flex flex-row w-full mt-4 items-center">
-              <div className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10">
-                  <Image
-                  src={topTracks.items[3].album.images[1].url}
-                  alt="Top track Icon 4"   
-                  width={64}
-                  height={64}
-                  style={{objectFit:"cover"}}
-                  priority={true}
-                  />
-              </div>
-              <p>{topTracks.items[3].name}</p>
+                  <button
+                    className="rounded-full h-16 w-16 overflow-hidden mr-8 ml-10 border-0 bg-transparent p-0"
+                    onClick={() => router.push('/tracks/' + topTracks.items[3].id)}
+                    aria-label={`View ${topTracks.items[3].name}'s details`}
+                  >
+                    <Image
+                    src={topTracks.items[3].album.images[1].url}
+                    alt="Top track Icon 4"   
+                    width={64}
+                    height={64}
+                    style={{objectFit:"cover"}}
+                    priority={true}
+                    />
+                  </button>
+                  <button
+                    className="border-0 bg-transparent p-0 hover:underline"
+                    onClick={() => router.push('/tracks/' + topTracks.items[3].id)}
+                  >
+                    <p>{topTracks.items[3].name}</p>
+                  </button>
                 </div>
               </div>
             </div>
